@@ -1,1 +1,198 @@
+#IMPORTING LIBRARIES
+
+from bs4 import BeautifulSoup
+import requests
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import numpy as np
+
+url = 'https://www.moneycontrol.com/mutual-funds/best-funds/equity.html'
+
+page = requests.get(url)
+
+soup = BeautifulSoup(page.text, 'html')
+soup
+#(The code fetches the HTML content of the given webpage using `requests.get()` and stores it in `page`. 
+Then, it parses the fetched HTML content into a `BeautifulSoup` object (`soup`),
+which allows easy searching and manipulation of the HTML structure.)
+
+tables = soup.find_all('table')
+print(len(tables))
+table = soup.find_all('table')[1]
+table
+#The code retrieves all `<table>` elements from the parsed HTML content using `soup.find_all('table')` and stores them in the `tables` list. 
+It then prints the number of tables found on the page. 
+The second table (`table[1]`) is accessed and stored in the `table` variable, allowing for further extraction or processing of its data.
+
+
+titles_Funds = [title.text.strip() for title in title_Funds]
+print(titles_Funds)
+#The code creates a list called `titles_Funds` by iterating over each element in `title_Funds` (which likely contains HTML elements related to mutual fund titles).
+For each element, it extracts the text using `.text`, removes any leading or trailing whitespace using `.strip()`, and stores the cleaned text in the list `titles_Funds`.
+Finally, it prints the list of fund titles.
+
+
+df = pd.DataFrame(columns = titles_Funds)
+df
+#This code creates an empty pandas DataFrame `df` with column names provided by the list `titles_Funds`.
+The columns in the DataFrame will match the mutual fund titles or headings stored in `titles_Funds`, 
+but initially, the DataFrame will contain no rows. When displayed, it will show an empty DataFrame with the specified columns.
+
+
+column_data = table.find_all('tr')
+for row in column_data[1:]:
+    row_data = row.find_all('td')
+    individual_row_data = [data.text.strip() for data in row_data]
+
+    length = len(df)
+    df.loc[length] = individual_row_data
+#The code retrieves all the rows (`<tr>`) from the table using `table.find_all('tr')` and stores them in `column_data`. 
+It then iterates through the rows, skipping the first row (typically the header). 
+For each row, it extracts all the cell data (`<td>`) using `row.find_all('td')`, strips the text content from each cell, 
+and stores it in the `individual_row_data` list.
+Next, the code finds the current length of the DataFrame df, which represents the number of rows in it. 
+It then appends the extracted row data (individual_row_data) as a new row in the DataFrame df using df.loc[length] = individual_row_data.
+
+df.to_csv('TOP MUTUAL FUNDS.csv',index=False)
+#This code exports the DataFrame `df` to a CSV file named `'TOP MUTUAL FUNDS.csv'` without including the index column.
+The `index=False` parameter ensures that the row indices are not written to the CSV, saving only the actual data from the DataFrame. 
+The CSV file will have the columns based on `titles_Funds` and the rows of mutual fund data.
+
+df=pd.read_csv("TOP MUTUAL FUNDS.csv")
+df.head()
+#The code reads the CSV file named `"TOP MUTUAL FUNDS.csv"` into a pandas DataFrame `df`. 
+The `df.head()` function is used to display the first five rows of the DataFrame, allowing you to preview the top records from the CSV file.
+
+
+
+ #CLEANING PART
+
+df['10Y'] = df['10Y'].replace('-', '0.00%')
+df['5Y'] = df['5Y'].replace('-', '0.00%')
+df['1W'] = df['1W'].replace('-', '0.00%')
+#This code replaces any occurrence of `'-'` (typically representing missing or unavailable data) in the `'10Y'`, `'5Y'`, and `'1W'` columns of the DataFrame `df` with `'0.00%'`. 
+These columns likely represent mutual fund performance over different time periods (10 years, 5 years, 1 week).
+This transformation ensures that the missing values are treated as `0.00%` for further analysis or calculations.
+
+df['1W'] = df['1W'].str.replace('%', '').astype(float)/100
+df['1M'] = df['1M'].str.replace('%', '').astype(float)/100
+df['3M'] = df['3M'].str.replace('%', '').astype(float)/100
+df['6M'] = df['6M'].str.replace('%', '').astype(float)/100
+df['YTD'] = df['YTD'].str.replace('%', '').astype(float)/100
+df['1Y'] = df['1Y'].str.replace('%', '').astype(float)/100
+df['2Y'] = df['2Y'].str.replace('%', '').astype(float)/100
+df['3Y'] = df['3Y'].str.replace('%', '').astype(float)/100
+df['5Y'] = df['5Y'].str.replace('%', '').astype(float)/100
+df['10Y'] = df['10Y'].str.replace('%', '').astype(float)/100
+
+#This code converts the percentage values in the columns `'1W'`, `'1M'`, `'3M'`, `'6M'`, `'YTD'`, `'1Y'`, `'2Y'`, `'3Y'`, `'5Y'`, and `'10Y'` from strings (with a percentage symbol) into decimal numbers for easier numerical analysis.
+It removes the `'%'` symbol using `.str.replace('%', '')`, converts the string values to `float`, and then divides them by 100 to change the percentage representation to decimals (e.g., `5%` becomes `0.05`). 
+This transformation standardizes the data for numerical computations and visualizations.
+
+df.to_csv('TOP MUTUAL FUNDS(NEW).csv',index=False)
+#This code saves the updated DataFrame `df` to a new CSV file named `'TOP MUTUAL FUNDS(NEW).csv'` without writing the index column. 
+The file will contain the modified mutual fund data with percentages converted to decimal format, ready for further use or analysis.
+
+# VISUALIZATION
+
+#CATEGORY NAME AND PLAN BAR CHART
+plt.figure(figsize=(6,6))
+sns.countplot(data=df,y=df['Category Name'],palette='Pastel2',hue='Plan')
+plt.show()
+
+#The code creates a horizontal bar chart using Seaborn's `countplot()` to visualize the distribution of mutual funds by category and plan type.
+It uses the `'Category Name'` for the y-axis, applies a pastel color palette, and segments the bars by the `'Plan'` column to compare different plans within each category. 
+Finally, it displays the plot with `plt.show()`.
+
+
+# CATEGORIES
+
+plt.figure(figsize=(6,6))
+df['Category Name'].value_counts().plot.pie(autopct='%1.3f%%',explode=(0.4,0,0,0,0,0,0,0,0,0,0))
+plt.show()
+#The code creates a pie chart to visualize the distribution of mutual fund categories using the counts from the `'Category Name'` column. 
+It highlights the first slice, displays percentages with three decimal places, and sets the figure size to 6x6 inches. 
+Finally, the chart is displayed with `plt.show()`.
+
+ #Scatter Plot: AuM vs YTD Performance
+plt.figure(figsize=(6, 6))
+
+sns.scatterplot(x='AuM (Cr)', y='YTD', hue='Category Name', data=df, palette="Set2", s=100)
+plt.title('AuM vs YTD Performance by Category', fontsize=16)
+plt.xlabel('AuM (Cr)', fontsize=12)
+plt.ylabel('YTD Performance (%)', fontsize=12)
+plt.tight_layout()
+plt.show()
+#The code generates a scatter plot to show the relationship between Assets under Management (AuM) and Year-to-Date (YTD) performance of mutual funds, with points colored by category. 
+It customizes the figure size, adds titles and labels, and displays the plot for analysis.
+
+
+#  Histogram: Distribution of YTD Performance
+
+plt.figure(figsize=(6, 6))
+sns.histplot(df['YTD'], bins=20, kde=True, color='skyblue')
+plt.title('Distribution of YTD Performance', fontsize=16)
+plt.xlabel('YTD Performance (%)', fontsize=12)
+plt.ylabel('Frequency', fontsize=12)
+plt.tight_layout()
+plt.show()
+#The code creates a histogram to visualize the distribution of Year-to-Date (YTD) performance values in the DataFrame `df`, 
+using 20 bins and adding a kernel density estimate (KDE) for a smoother representation. 
+The histogram is colored sky blue, with titles and labels for clarity. Finally, it adjusts the layout and displays the plot.
+
+ #Histogram: Distribution of 10Y Performance
+
+plt.figure(figsize=(6, 6))
+sns.histplot(df['10Y'], bins=20, kde=True, color='skyblue')  
+plt.title('Distribution of 10-Year Return', fontsize=16)
+plt.xlabel('10-Year Return (%)', fontsize=12)
+plt.ylabel('Frequency', fontsize=12)
+plt.tight_layout()
+plt.show()
+#The code generates a histogram to visualize the distribution of 10-Year (10Y) return values from the DataFrame `df`,
+using 20 bins and including a kernel density estimate (KDE) for a smoother curve.
+The histogram is colored sky blue and features titles and labels for the axes. It then adjusts the layout and displays the plot.
+
+#  Boxplot: YTD performance distribution by Category
+plt.figure(figsize=(6, 6))
+sns.boxplot(x='Category Name', y='YTD', data=df, palette='Set2')
+plt.xticks(rotation=45, ha='right')
+plt.title('YTD Performance Distribution by Category', fontsize=16)
+plt.xlabel('Category', fontsize=12)
+plt.ylabel('YTD Performance (%)', fontsize=12)
+plt.tight_layout()
+plt.show()
+#The code creates a box plot to display the distribution of Year-to-Date (YTD) performance across different mutual fund categories from the DataFrame `df`.
+It uses a distinct color palette, rotates the x-axis labels for better readability, and includes titles and axis labels. 
+Finally, it adjusts the layout and displays the plot.
+
+
+#  Heatmap for returns over different periods
+
+returns_cols = ['1W', '1M', '3M', '6M', 'YTD', '1Y', '2Y', '3Y', '5Y', '10Y']
+plt.figure(figsize=(10, 8))
+sns.heatmap(df[returns_cols], annot=True, cmap='coolwarm', linewidths=.5)
+plt.title('Returns Heatmap')
+plt.xlabel('Return Period')
+plt.ylabel('Scheme Index')
+plt.tight_layout()
+plt.show()
+
+#The code generates a heatmap to visualize the returns of mutual funds over various periods (1W, 1M, 3M, 6M, YTD, 1Y, 2Y, 3Y, 5Y, and 10Y) from the DataFrame `df`.
+It includes annotations for clarity and uses the 'coolwarm' color palette to represent the return values. 
+The plot is titled and labeled for the axes, and then it adjusts the layout before displaying the heatmap.
+
+
+
+
+
+
+
+
+
+
+
+
+
 
